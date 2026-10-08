@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>Yoto 登入</title>
+<style>body{font:16px -apple-system,system-ui,sans-serif;padding:3rem;text-align:center;color:#1e1e1e}</style>
+</head>
+<body>
+<h2 id="msg">登入處理中…</h2>
+<p id="sub" style="color:#6b6b6b"></p>
+<script>
+  const p = new URLSearchParams(location.search);
+  const payload = {
+    code: p.get('code'),
+    state: p.get('state'),
+    error: p.get('error'),
+    error_description: p.get('error_description'),
+  };
+  const ch = new BroadcastChannel('yoto-auth');
+  ch.postMessage(payload);
+  ch.close();
+  if (payload.error) {
+    document.getElementById('msg').textContent = '登入失敗';
+    document.getElementById('sub').textContent = payload.error_description || payload.error;
+  } else {
+    document.getElementById('msg').textContent = '✅ 登入完成';
+    document.getElementById('sub').textContent = '可以關閉這個分頁，回到 Yoto Card Studio。';
+    setTimeout(() => window.close(), 1500);
+  }
+</script>
+</body>
+</html>

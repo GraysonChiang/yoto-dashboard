@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yoto Card Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23e8552b'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>Yoto Card Studio</h1>
+  <nav class="tabs">
+    <button data-tab="playlists" class="active">我的 Playlist</button>
+    <button data-tab="print">列印標籤</button>
+  </nav>
+  <div class="account" id="account">
+    <span id="account-status" class="muted">尚未登入 Yoto</span>
+    <button id="btn-login" class="small">登入 Yoto</button>
+    <button id="btn-logout" class="small ghost hidden">登出</button>
+  </div>
+</header>
+
+<main>
+  <!-- ① 我的 Playlist -->
+  <section id="tab-playlists" class="tab active">
+    <div id="playlist-list-view">
+      <div class="row between">
+        <h2>MYO Playlist</h2>
+        <button id="btn-new-playlist" class="primary">＋ 新增 playlist</button>
+      </div>
+      <p class="muted" id="playlist-list-hint">登入後會列出你帳號裡的 MYO playlist。</p>
+      <ul id="playlist-list" class="cards"></ul>
+    </div>
+
+    <div id="playlist-edit-view" class="hidden">
+      <div class="row between">
+        <button id="btn-back-list" class="ghost">← 回列表</button>
+        <span class="muted" id="edit-card-id"></span>
+      </div>
+      <div class="meta-grid">
+        <label class="cover" title="點擊更換封面">
+          <img id="edit-cover" alt="" hidden>
+          <span id="edit-cover-empty">＋ 封面圖</span>
+          <input id="cover-input" type="file" accept="image/*" hidden>
+        </label>
+        <div>
+          <label class="field">
+            <span>Playlist 名稱</span>
+            <input id="edit-title" type="text" placeholder="例如：睡前故事" maxlength="80">
+          </label>
+          <div class="row gap">
+            <label class="field grow">
+              <span>分類</span>
+              <select id="edit-category"></select>
+            </label>
+            <label class="field grow">
+              <span>作者／演出</span>
+              <input id="edit-author" type="text" placeholder="選填" maxlength="80">
+            </label>
+          </div>
+          <label class="field">
+            <span>描述</span>
+            <textarea id="edit-description" rows="2" placeholder="選填，會顯示在 Yoto App 裡"></textarea>
+          </label>
+        </div>
+      </div>
+      <div id="dropzone" class="dropzone">
+        把 mp3 拖到這裡，或 <label class="link">選擇檔案<input id="file-input" type="file" accept="audio/mpeg,.mp3" multiple hidden></label>
+        ，或 <label class="link">選擇整個資料夾<input id="folder-input" type="file" webkitdirectory multiple hidden></label>
+        <div class="muted small">選資料夾會照檔名排序加入 mp3，資料夾裡的 cover 圖會自動當封面</div>
+      </div>
+      <ol id="track-list" class="tracks"></ol>
+      <div class="row between sticky-actions">
+        <span id="edit-summary" class="muted"></span>
+        <button id="btn-upload" class="primary">上傳到 Yoto</button>
+      </div>
+      <div id="upload-log" class="log hidden"></div>
+    </div>
+  </section>
+
+  <!-- 列印標籤 -->
+  <section id="tab-print" class="tab">
+    <h2>列印卡片標籤</h2>
+    <p class="muted">勾選要印的 playlist，會照勾選的先後順序排進貼紙（右邊數字是第幾張，想換順序就取消再重勾），每格跟 NFC 卡一樣大。</p>
+    <div class="print-layout">
+      <div class="print-controls">
+        <label class="field layout-field">
+          <span>紙張版型</span>
+          <select id="print-layout"></select>
+        </label>
+        <ul id="print-list" class="print-list"><li class="muted">登入後會列出你的 playlist。</li></ul>
+        <div class="print-options">
+          <label class="field">
+            <span>從第幾格開始</span>
+            <select id="print-start"></select>
+          </label>
+          <label class="field cut-only">
+            <span>卡片間距</span>
+            <select id="print-gap">
+              <option value="3" selected>3 mm（好剪，建議）</option>
+              <option value="0">0 mm（一刀剪兩張）</option>
+              <option value="6">6 mm</option>
+            </select>
+          </label>
+          <label class="field die-only">
+            <span>出血</span>
+            <select id="print-bleed-mm">
+              <option value="2" selected>2 mm（建議，模切偏一點也不露白）</option>
+              <option value="1">1 mm</option>
+              <option value="0">不加</option>
+            </select>
+          </label>
+          <label class="check cut-only"><input type="checkbox" id="print-bleed" checked> 出血 1 mm（剪歪也不露白）</label>
+          <label class="check cut-only"><input type="checkbox" id="print-marks" checked> 裁切標記</label>
+          <label class="check"><input type="checkbox" id="print-titles"> 封面下方加上標題</label>
+        </div>
+        <details class="print-calib die-only">
+          <summary>印表機校正（第一次使用必做）</summary>
+          <ol class="small">
+            <li>用<strong>一般 A4 紙</strong>按「印校正頁」。</li>
+            <li>把印好的紙疊在貼紙紙上，對著光看框線有沒有對齊貼紙的模切線。</li>
+            <li>偏了就在下面輸入位移（往右／往下為正），再印一次確認。設定會記住。</li>
+          </ol>
+          <div class="row gap">
+            <label class="field"><span>X 位移（mm）</span><input type="number" id="print-offx" step="0.25" value="0"></label>
+            <label class="field"><span>Y 位移（mm）</span><input type="number" id="print-offy" step="0.25" value="0"></label>
+          </div>
+          <button id="btn-calib" class="ghost">印校正頁</button>
+        </details>
+        <div class="row between">
+          <span id="print-summary" class="muted"></span>
+          <button id="btn-print" class="primary" disabled>列印</button>
+        </div>
+        <p class="muted small" id="print-hint"></p>
+      </div>
+      <div id="print-preview" class="print-preview"></div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast hidden"></div>
+<!-- 列印時只顯示這裡（見 style.css 的 @media print） -->
+<div id="print-sheets" aria-hidden="true"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
