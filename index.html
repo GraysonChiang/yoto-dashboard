@@ -4,15 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yoto Card Studio</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23e8552b'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23ff4e31'/%3E%3Ccircle cx='8' cy='8' r='3' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chewy&family=Huninn&family=Instrument+Sans:wght@400..700&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="topbar">
-  <h1>Yoto Card Studio</h1>
+  <div class="brand"><span class="logo-dot"></span><h1>Yoto Card Studio</h1></div>
   <nav class="tabs">
-    <button data-tab="playlists" class="active">我的 Playlist</button>
-    <button data-tab="print">列印標籤</button>
+    <button data-tab="playlists" class="active">Make your own card</button>
+    <button data-tab="print">Print</button>
   </nav>
   <div class="account" id="account">
     <span id="account-status" class="muted">尚未登入 Yoto</span>
@@ -21,68 +24,83 @@
   </div>
 </header>
 
+<section class="hero">
+  <h2>Make your own card<br>&amp; <em>print</em> it</h2>
+  <p>拖進 mp3 就變成 MYO playlist，每首歌配上小圖示；封面排成剛好一張卡的貼紙，在家印或送 ibon 都行。</p>
+</section>
+
 <main>
-  <!-- ① 我的 Playlist -->
+  <!-- ① Make your own card（playlist） -->
   <section id="tab-playlists" class="tab active">
     <div id="playlist-list-view">
-      <div class="row between">
-        <h2>MYO Playlist</h2>
-        <button id="btn-new-playlist" class="primary">＋ 新增 playlist</button>
+      <div class="list-head">
+        <h2>我的 Playlist</h2>
+        <div class="list-tools">
+          <label class="search"><span aria-hidden="true">⌕</span><input id="playlist-search" type="search" placeholder="搜尋 playlist…" autocomplete="off"></label>
+          <button id="btn-new-playlist" class="primary">＋ 新增 playlist</button>
+        </div>
       </div>
       <p class="muted" id="playlist-list-hint">登入後會列出你帳號裡的 MYO playlist。</p>
       <ul id="playlist-list" class="cards"></ul>
     </div>
 
     <div id="playlist-edit-view" class="hidden">
-      <div class="row between">
-        <button id="btn-back-list" class="ghost">← 回列表</button>
-        <span class="muted" id="edit-card-id"></span>
+      <div class="edit-topbar">
+        <button id="btn-back-list" class="bare">‹ 回列表</button>
+        <div class="edit-topbar-actions">
+          <span class="muted small" id="edit-card-id"></span>
+          <button id="btn-upload" class="primary">上傳到 Yoto</button>
+        </div>
       </div>
-      <div class="meta-grid">
-        <label class="cover" title="點擊更換封面">
-          <img id="edit-cover" alt="" hidden>
-          <span id="edit-cover-empty">＋ 封面圖</span>
-          <input id="cover-input" type="file" accept="image/*" hidden>
-        </label>
-        <div>
-          <label class="field">
-            <span>Playlist 名稱</span>
-            <input id="edit-title" type="text" placeholder="例如：睡前故事" maxlength="80">
-          </label>
-          <div class="row gap">
-            <label class="field grow">
+      <div class="edit-layout">
+        <aside class="edit-side">
+          <div class="cover-box">
+            <label class="cover" title="點擊更換封面">
+              <img id="edit-cover" alt="" hidden>
+              <span id="edit-cover-empty">＋ 封面圖<small>5:8 直式，會自動調整</small></span>
+              <input id="cover-input" type="file" accept="image/*" hidden>
+            </label>
+            <label for="cover-input" class="cover-action">⇪ 更換封面</label>
+          </div>
+          <div class="side-fields">
+            <label class="field">
               <span>分類</span>
               <select id="edit-category"></select>
             </label>
-            <label class="field grow">
+            <label class="field">
               <span>作者／演出</span>
               <input id="edit-author" type="text" placeholder="選填" maxlength="80">
             </label>
           </div>
-          <label class="field">
-            <span>描述</span>
-            <textarea id="edit-description" rows="2" placeholder="選填，會顯示在 Yoto App 裡"></textarea>
-          </label>
-        </div>
+        </aside>
+        <section class="edit-main">
+          <input id="edit-title" class="title-input" type="text" placeholder="Playlist 名稱" maxlength="80" aria-label="Playlist 名稱">
+          <textarea id="edit-description" class="desc-input" rows="3" placeholder="描述（選填，會顯示在 Yoto App 裡）" aria-label="描述"></textarea>
+          <div id="dropzone" class="tracks-panel">
+            <div class="tracks-actions">
+              <label class="btn primary">上傳 mp3<input id="file-input" type="file" accept="audio/mpeg,.mp3" multiple hidden></label>
+              <label class="btn secondary">選擇整個資料夾<input id="folder-input" type="file" webkitdirectory multiple hidden></label>
+            </div>
+            <div class="tracks-head">
+              <span id="edit-summary"></span>
+              <span class="small muted">拖曳 ≡ 調整順序・點圖示換圖</span>
+            </div>
+            <ol id="track-list" class="tracks"></ol>
+            <p class="drop-hint">也可以直接把 mp3 或整個資料夾拖進這個框。選資料夾會照檔名排序，裡面的 cover 圖自動當封面</p>
+          </div>
+          <div id="upload-log" class="log hidden"></div>
+        </section>
       </div>
-      <div id="dropzone" class="dropzone">
-        把 mp3 拖到這裡，或 <label class="link">選擇檔案<input id="file-input" type="file" accept="audio/mpeg,.mp3" multiple hidden></label>
-        ，或 <label class="link">選擇整個資料夾<input id="folder-input" type="file" webkitdirectory multiple hidden></label>
-        <div class="muted small">選資料夾會照檔名排序加入 mp3，資料夾裡的 cover 圖會自動當封面</div>
+    </div>
+  </section>
       </div>
-      <ol id="track-list" class="tracks"></ol>
-      <div class="row between sticky-actions">
-        <span id="edit-summary" class="muted"></span>
-        <button id="btn-upload" class="primary">上傳到 Yoto</button>
-      </div>
-      <div id="upload-log" class="log hidden"></div>
     </div>
   </section>
 
   <!-- 列印標籤 -->
   <section id="tab-print" class="tab">
     <h2>列印卡片標籤</h2>
-    <p class="muted">勾選要印的 playlist，會照勾選的先後順序排進貼紙（右邊數字是第幾張，想換順序就取消再重勾），每格跟 NFC 卡一樣大。</p>
+    <p class="muted">勾選要印的 playlist，卡片會依序排進右邊的畫布（清單右側的數字是排在第幾格），再到畫布上拖曳調整位置。每格跟 NFC 卡一樣大。</p>
     <div class="print-layout">
       <div class="print-controls">
         <label class="field layout-field">
@@ -91,10 +109,6 @@
         </label>
         <ul id="print-list" class="print-list"><li class="muted">登入後會列出你的 playlist。</li></ul>
         <div class="print-options">
-          <label class="field">
-            <span>從第幾格開始</span>
-            <select id="print-start"></select>
-          </label>
           <label class="field cut-only">
             <span>卡片間距</span>
             <select id="print-gap">
@@ -113,7 +127,6 @@
           </label>
           <label class="check cut-only"><input type="checkbox" id="print-bleed" checked> 出血 1 mm（剪歪也不露白）</label>
           <label class="check cut-only"><input type="checkbox" id="print-marks" checked> 裁切標記</label>
-          <label class="check"><input type="checkbox" id="print-titles"> 封面下方加上標題</label>
         </div>
         <details class="print-calib die-only">
           <summary>印表機校正（第一次使用必做）</summary>
@@ -133,8 +146,27 @@
           <button id="btn-print" class="primary" disabled>列印</button>
         </div>
         <p class="muted small" id="print-hint"></p>
+        <div class="export-box">
+          <h3>送 ibon 列印</h3>
+          <p class="small" id="export-hint"></p>
+          <button id="btn-ibon-upload" class="primary hidden" disabled>上傳到 ibon，取得取件編號</button>
+          <button id="btn-export-ibon" class="primary" disabled>下載並開啟 ibon 上傳頁</button>
+          <div id="ibon-result" class="ibon-result hidden"></div>
+          <div class="row gap export-more">
+            <span class="small muted">只下載：</span>
+            <button id="btn-export-pdf" class="small ghost" disabled>PDF</button>
+            <button id="btn-export-jpg" class="small ghost" disabled>JPG</button>
+          </div>
+          <p class="small muted" id="export-status"></p>
+        </div>
       </div>
-      <div id="print-preview" class="print-preview"></div>
+      <section class="print-canvas">
+        <div class="canvas-bar">
+          <h3>排版畫布</h3>
+          <span class="small muted">拖曳卡片到其他格子就能換位置，拖到空格也可以</span>
+        </div>
+        <div id="print-preview" class="print-preview"></div>
+      </section>
     </div>
   </section>
 </main>

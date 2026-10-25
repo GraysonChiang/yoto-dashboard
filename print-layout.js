@@ -9,18 +9,18 @@ export const PER_PAGE = COLS * ROWS;
 // 一般印表機四周約 3～5 mm 印不到
 export const MIN_MARGIN = 5;
 
-// 3×3 格子在 A4 上置中。gap = 卡片之間的間距。
-export function gridGeometry({ gap = 0 } = {}) {
-  const width = COLS * CARD.w + (COLS - 1) * gap;
-  const height = ROWS * CARD.h + (ROWS - 1) * gap;
-  if (width > A4.w - 2 * MIN_MARGIN || height > A4.h - 2 * MIN_MARGIN) {
-    throw new Error(`間距 ${gap} mm 太大，3×3 放不下 A4（四周需留 ${MIN_MARGIN} mm）`);
+// cols×rows 格子在紙上置中（預設 A4 3×3）。gap = 卡片之間的間距。
+export function gridGeometry({ gap = 0, cols = COLS, rows = ROWS, page = A4, pageName = 'A4', minMargin = MIN_MARGIN } = {}) {
+  const width = cols * CARD.w + (cols - 1) * gap;
+  const height = rows * CARD.h + (rows - 1) * gap;
+  if (width > page.w - 2 * minMargin || height > page.h - 2 * minMargin) {
+    throw new Error(`間距 ${gap} mm 太大，${cols}×${rows} 放不下 ${pageName}（四周需留 ${minMargin} mm）`);
   }
-  const x0 = (A4.w - width) / 2;
-  const y0 = (A4.h - height) / 2;
+  const x0 = (page.w - width) / 2;
+  const y0 = (page.h - height) / 2;
   const slots = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
       slots.push({ x: x0 + c * (CARD.w + gap), y: y0 + r * (CARD.h + gap) });
     }
   }
@@ -35,6 +35,16 @@ export const LAYOUTS = {
   'a4-3x3': {
     name: '一般 A4 貼紙（3×3，自己剪）',
     page: A4, pageSize: 'A4', perPage: PER_PAGE, die: false, rotate: false,
+    grid: { cols: COLS, rows: ROWS, pageName: 'A4' },
+  },
+  // ibon 相片貼紙：4×6 吋（6×4 橫放）一張放 2 張卡，印好自己剪。
+  // ibon 官方說明：圖片會「等比縮放至可列印邊界」，「最大可列印範圍為 9×13.8cm」（±1 mm）；不是裁切。
+  // 2026-10-11 實測 6×4 吋的圖被縮到約 89～90%，卡片只剩 50 × 79 mm。
+  // 所以頁面直接做成最大可列印範圍 138 × 90 mm，ibon 就會 1:1 印出，卡片才是 54 × 85.6 mm。
+  'ibon-4x6': {
+    name: 'ibon 4×6 貼紙（每張 2 格，自己剪）',
+    page: { w: 138, h: 90 }, pageSize: '138mm 90mm', perPage: 2, die: false, rotate: false,
+    grid: { cols: 2, rows: 1, pageName: 'ibon 4×6 可印範圍', minMargin: 2 },
   },
   'easycard-8': {
     name: '悠遊卡模切貼紙 8 格（A4 橫放，建議）',
@@ -66,14 +76,14 @@ export function layoutGeometry(id, { gap = 3, offsetX = 0, offsetY = 0 } = {}) {
     const dy = L.ys[1] - L.ys[0] - label.h;
     spacing = Math.min(dx, dy);
   } else {
-    const g = gridGeometry({ gap });
+    const g = gridGeometry({ gap, page: L.page, ...L.grid });
     label = { ...CARD };
     slots = g.slots.map(shift);
     spacing = gap;
   }
   const dots = (L.dots || []).map(([x, y]) => shift({ x, y }));
   return { id, name: L.name, page: L.page, pageSize: L.pageSize, perPage: L.perPage, die: L.die, rotate: L.rotate,
-    label, slots, gap: spacing, dots };
+    margin: L.margin || 0, label, slots, gap: spacing, dots };
 }
 
 // items: [{ id, copies }] → 每頁 perPage 格的陣列，空格為 null。

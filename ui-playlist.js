@@ -1,4 +1,4 @@
-// 「我的 Playlist」分頁：列表、編輯、拖放 mp3、排序、圖示、上傳
+// 「Make your own card」分頁：列表、編輯、拖放 mp3、排序、圖示、上傳
 import { listMine, getContent, saveContent, deleteContent, uploadAudio, uploadIcon, uploadCover, listPublicIcons, listMyIcons } from './yoto-api.js';
 import { buildContentBody, tracksFromContent, metaFromContent, fileSha256, CATEGORIES } from './playlist.js';
 import { imageTo16x16Png, imageToCover, blobToDataUrl } from './icons.js';
@@ -24,38 +24,50 @@ let seq = 0;
 const views = { list: () => $('#playlist-list-view'), edit: () => $('#playlist-edit-view') };
 
 // ---------- 列表 ----------
+let allCards = [];
+const fmtDate = (iso) => {
+  const d = iso ? new Date(iso) : null;
+  return d && !isNaN(d) ? `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}` : '';
+};
+
 async function refreshList() {
   const ul = $('#playlist-list');
   const hint = $('#playlist-list-hint');
-  if (!loggedIn) { ul.innerHTML = ''; hint.textContent = '登入後會列出你帳號裡的 MYO playlist。'; return; }
+  if (!loggedIn) { allCards = []; ul.innerHTML = ''; hint.textContent = '登入後會列出你帳號裡的 MYO playlist。'; return; }
   hint.textContent = '載入中…';
   try {
-    const cards = await listMine();
-    hint.textContent = cards.length ? '' : '還沒有任何 playlist，按「新增 playlist」開始。';
-    ul.innerHTML = cards
-      .sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''))
-      .map((c) => `<li data-id="${esc(c.cardId)}">
-          <span class="row gap">
-            ${c.metadata?.cover?.imageL ? `<img class="thumb" src="${esc(c.metadata.cover.imageL)}" alt="">` : '<span class="thumb empty"></span>'}
-            <span><strong>${esc(c.title || '(未命名)')}</strong>
-            <span class="muted"> · ${esc(c.cardId)}</span></span>
-          </span>
-          <span class="actions">
-            <span class="muted">${c.metadata?.media?.duration ? Math.round(c.metadata.media.duration / 60) + ' 分鐘' : ''}</span>
-            <button class="small ghost danger" data-action="delete" title="刪除這個 playlist">刪除</button>
-          </span>
-        </li>`).join('');
-    $$('li', ul).forEach((li) => {
-      li.addEventListener('click', () => openExisting(li.dataset.id));
-      $('[data-action=delete]', li).addEventListener('click', (e) => {
-        e.stopPropagation();
-        removePlaylist(li.dataset.id, $('strong', li).textContent);
-      });
-    });
+    allCards = (await listMine()).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+    renderCards();
   } catch (e) {
     hint.textContent = '';
     toast(e.message, { error: true, ms: 6000 });
   }
+}
+
+// 依搜尋字串過濾後畫出卡片
+function renderCards() {
+  const ul = $('#playlist-list');
+  const hint = $('#playlist-list-hint');
+  const q = $('#playlist-search').value.trim().toLowerCase();
+  const cards = q ? allCards.filter((c) => (c.title || '').toLowerCase().includes(q)) : allCards;
+  hint.textContent = !allCards.length ? '還沒有任何 playlist，按「新增 playlist」開始。'
+    : !cards.length ? `找不到「${q}」` : '';
+  ul.innerHTML = cards
+    .map((c) => `<li data-id="${esc(c.cardId)}" title="${esc(c.cardId)}・點一下編輯">
+        <div class="card-cover">
+          ${c.metadata?.cover?.imageL ? `<img src="${esc(c.metadata.cover.imageL)}" alt="" loading="lazy">` : `<span class="no-img">${esc(c.title || '(未命名)')}</span>`}
+          <button class="small card-delete" data-action="delete" title="刪除這個 playlist" aria-label="刪除"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        </div>
+        <strong class="card-title">${esc(c.title || '(未命名)')}</strong>
+        <span class="card-meta muted">${[fmtDate(c.updatedAt || c.createdAt), c.metadata?.media?.duration ? `${Math.round(c.metadata.media.duration / 60)} 分鐘` : ''].filter(Boolean).join(' · ')}</span>
+      </li>`).join('');
+  $$('li', ul).forEach((li) => {
+    li.addEventListener('click', () => openExisting(li.dataset.id));
+    $('[data-action=delete]', li).addEventListener('click', (e) => {
+      e.stopPropagation();
+      removePlaylist(li.dataset.id, $('strong', li).textContent);
+    });
+  });
 }
 
 async function removePlaylist(cardId, title) {
@@ -112,7 +124,7 @@ function showEdit() {
   show(views.list(), false);
   show(views.edit(), true);
   $('#edit-title').value = editing.title;
-  $('#edit-card-id').textContent = editing.cardId ? `cardId：${editing.cardId}（更新既有 playlist）` : '新的 playlist';
+  $('#edit-card-id').textContent = editing.cardId ? `cardId ${editing.cardId}` : '新的 playlist';
   $('#edit-description').value = editing.meta.description;
   $('#edit-category').value = editing.meta.category;
   $('#edit-author').value = editing.meta.author;
@@ -163,16 +175,18 @@ function renderTracks() {
   const ol = $('#track-list');
   ol.innerHTML = editing.tracks.map((t, i) => `
     <li class="track" draggable="true" data-id="${t.id}">
+      <span class="handle" title="拖曳調整順序" aria-hidden="true">≡</span>
       <span class="num">${i + 1}</span>
       <img class="icon" src="${t.iconUrl || blankIcon()}" title="點擊更換圖示" alt="">
-      <div>
+      <div class="track-main">
         <input type="text" value="${esc(t.title)}" placeholder="曲名" data-field="title">
-        <div class="file">${esc(t.file?.name || (t.sha256 ? '已在 Yoto 上' : ''))} ${t.info?.duration ? '· ' + fmtDuration(t.info.duration) : ''}</div>
+        <div class="file">${esc(t.file?.name || (t.sha256 ? '已在 Yoto 上' : ''))}</div>
       </div>
+      <span class="meta">${[t.info?.duration ? fmtDuration(t.info.duration) : '', t.file?.size ? fmtSize(t.file.size) : ''].filter(Boolean).join(' · ')}</span>
       <span class="state ${t.state === 'done' ? 'ok' : t.state === 'error' ? 'err' : ''}" title="${esc(t.error || '')}">
         ${t.state === 'upload' && t.progress != null ? `上傳 ${Math.round(t.progress * 100)}%` : STATE_TEXT[t.state] || ''}
       </span>
-      <button class="small ghost danger" data-action="remove" title="移除">✕</button>
+      <button class="small ghost danger" data-action="remove" title="移除" aria-label="移除">✕</button>
     </li>`).join('');
 
   $$('.track', ol).forEach((li) => {
@@ -182,9 +196,12 @@ function renderTracks() {
     $('.icon', li).addEventListener('click', () => pickIcon(t));
     li.addEventListener('dragstart', (e) => { li.classList.add('dragging'); e.dataTransfer.setData('text/plain', t.id); e.dataTransfer.effectAllowed = 'move'; });
     li.addEventListener('dragend', () => li.classList.remove('dragging'));
-    li.addEventListener('dragover', (e) => { e.preventDefault(); });
+    // 曲目之間的拖曳排序不要冒泡到外層的上傳框（不然會被當成拖檔案進來）
+    li.addEventListener('dragover', (e) => { if (!e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.stopPropagation(); } });
     li.addEventListener('drop', (e) => {
+      if (e.dataTransfer.types.includes('Files')) return; // 拖檔案進來交給上傳框
       e.preventDefault();
+      e.stopPropagation();
       const fromId = Number(e.dataTransfer.getData('text/plain'));
       if (!fromId || fromId === t.id) return;
       const from = editing.tracks.findIndex((x) => x.id === fromId);
@@ -199,6 +216,10 @@ function renderTracks() {
   const total = editing.tracks.reduce((s, t) => s + (t.info?.duration || 0), 0);
   $('#edit-summary').textContent = n ? `${n} 首${total ? ' · 共 ' + fmtDuration(total) : ''}` : '還沒有歌曲';
   $('#btn-upload').disabled = n === 0;
+}
+
+function fmtSize(bytes) {
+  return bytes >= 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
 function blankIcon() {
@@ -390,7 +411,7 @@ async function doUploadAll() {
     }));
     const isNew = !editing.cardId;
     editing.cardId = card.cardId || editing.cardId;
-    $('#edit-card-id').textContent = `cardId：${editing.cardId}（更新既有 playlist）`;
+    $('#edit-card-id').textContent = `cardId ${editing.cardId}`;
     log(`✅ 完成！cardId = ${editing.cardId}`);
     if (isNew) log('下一步：打開 Yoto App → Library → Playlists，找到這個 playlist →「Link to a card」→ 感應 MYO 卡。');
     else log('已綁定這個 playlist 的卡片會自動更新，不用重新綁定。');
@@ -431,8 +452,10 @@ export function initPlaylistTab() {
   });
 
   const dz = $('#dropzone');
-  dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-  dz.addEventListener('drop', (e) => { e.preventDefault(); dz.classList.remove('over'); addFiles(e.dataTransfer.files); });
+  const hasFiles = (e) => e.dataTransfer?.types.includes('Files');
+  dz.addEventListener('dragover', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', (e) => { if (!dz.contains(e.relatedTarget)) dz.classList.remove('over'); });
+  dz.addEventListener('drop', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dz.classList.remove('over'); addFiles(e.dataTransfer.files); });
+  $('#playlist-search').addEventListener('input', renderCards);
   $('#file-input').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
 }
