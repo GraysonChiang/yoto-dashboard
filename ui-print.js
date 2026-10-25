@@ -340,10 +340,14 @@ function onOffsetChange() {
   render();
 }
 
+// 公開版沒有本機 server，先不提供送 ibon：拿掉 ibon 專用版型和整個送印區塊
+const AVAILABLE = Object.keys(LAYOUTS).filter((id) => LOCAL_SERVER || id !== 'ibon-4x6');
+
 export function initPrintTab() {
-  $('#print-layout').innerHTML = Object.entries(LAYOUTS)
-    .map(([id, l]) => `<option value="${id}">${esc(l.name)}</option>`).join('');
-  $('#print-layout').value = LAYOUTS[prefs.layout] ? prefs.layout : 'easycard-8';
+  $('#print-layout').innerHTML = AVAILABLE
+    .map((id) => `<option value="${id}">${esc(LAYOUTS[id].name)}</option>`).join('');
+  $('#print-layout').value = AVAILABLE.includes(prefs.layout) ? prefs.layout : 'easycard-8';
+  show($('.export-box'), LOCAL_SERVER);
   // 換版型：照目前順序重新排（每頁格數變了，原本的位置沒有意義）
   $('#print-layout').addEventListener('change', () => {
     prefs.layout = currentLayout(); savePrefs();

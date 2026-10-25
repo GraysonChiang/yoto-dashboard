@@ -284,6 +284,7 @@ label.btn.secondary:hover { background: var(--line); }
 .no-cover { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; text-align: center;
   padding: 4px; box-sizing: border-box; font: 4px/1.3 -apple-system, "PingFang TC", sans-serif; color: #555; }
 .layout-field { margin: 0; }
+.paper-hint { font-size: 13px; margin: 6px 0 0; }
 .print-calib { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
 .print-calib summary { cursor: pointer; font-weight: 600; }
 .print-calib ol { padding-left: 20px; margin: 8px 0; color: var(--muted); }
